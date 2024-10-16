@@ -660,7 +660,7 @@ public class Display {
 
                 int otherAvg = (((Math.abs(otherAz3D) + Math.abs(otherBz3D) + Math.abs(otherCz3D)) + ((Math.abs(otherAy3D) + Math.abs(otherBy3D) + Math.abs(otherCy3D))) + ((Math.abs(otherAx3D) + Math.abs(otherBx3D) + Math.abs(otherCx3D)))) / 200);
                 if (Ax3D > getFrameWidth() / 2) {
-                    if (avg < otherAvg) {
+                    if (avg > otherAvg) {
                         result.add(indx, triangle);
                         successful = true;
                         break;
@@ -705,7 +705,7 @@ public class Display {
 
             g.setColor(new Color(Math.max(Math.min(triangle.color.getRed() - avg, 255), 0), Math.max(Math.min(triangle.color.getGreen() - avg, 255), 0), Math.max(Math.min(triangle.color.getBlue() - avg, 255), 0)));
 
-            if (Az3D > 50){
+            if (Az3D > 50)
                 fillTriangle(
                         (int) ((Ax3D / Az3D) * fov) + getFrameWidth() / 2,
                         (int) ((Ay3D / Az3D) * fov) + getFrameHeight() / 2,
@@ -714,7 +714,6 @@ public class Display {
                         (int) ((Cx3D / Cz3D) * fov) + getFrameWidth() / 2,
                         (int) ((Cy3D / Cz3D) * fov) + getFrameHeight() / 2
                 );
-            }
         }
     }
 
@@ -755,11 +754,22 @@ public class Display {
             boolean successful = false;
             for (Mesh3D other : result) {
                 int otherAvg = -Math.abs(other.tris[0].verticesA.getFirst()) + -Math.abs(mesh.tris[0].verticesA.get(1)) + mesh.tris[0].verticesA.get(2);
-                if (avg < otherAvg) {
-                    result.add(indx, mesh);
-                    successful = true;
-                    break;
+
+                if (camera.x > other.tris[0].verticesA.getFirst() && camera.x > mesh.tris[0].verticesA.getFirst()) {
+                    if (avg < otherAvg) {
+                        result.add(indx, mesh);
+                        successful = true;
+                        break;
+                    }
                 }
+                else {
+                    if (avg > otherAvg) {
+                        result.add(indx, mesh);
+                        successful = true;
+                        break;
+                    }
+                }
+
                 indx++;
             }
 
