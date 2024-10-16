@@ -730,6 +730,7 @@ public class Display {
         camera = new RotatableCamera();
     }
 
+    public void changeCameraSpeed(int newSpeed){camera.speed = newSpeed;}
 
     public void addMeshToRoster(Mesh3D mesh, String tag){
         tags.put(tag, meshes.size());

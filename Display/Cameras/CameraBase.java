@@ -11,7 +11,7 @@ public class CameraBase {
     public double yAxis;
     public double zAxis = 0;
 
-    int speed = 2;
+    public int speed = 4;
 
     public void update(boolean @NotNull [] keys){}
 }

@@ -26,7 +26,7 @@ public class RectangleMesh {
                     else if (face == 2)
                         tris.addAll(buildNorthSouthFace(x + faceX * faceNorthWidth, y + faceY * faceNorthHeight, z + depth, faceNorthWidth, faceNorthHeight, color));
                     else if (face == 3)
-                        tris.addAll(buildEastWestFace(x, y + faceY * faceEastHeight, z + faceX * faceEastHeight, faceEastHeight, faceEastWidth, color));
+                        tris.addAll(buildEastWestFace(x, y + faceY * faceEastHeight, z + faceX * faceEastWidth, faceEastHeight, faceEastWidth, color));
                     else if (face == 4)
                         tris.addAll(buildTopBottomFace(x + faceX * faceTopWidth, y, z + faceY * faceTopHeight, faceTopWidth, faceTopHeight, color));
                     else
