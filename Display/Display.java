@@ -705,7 +705,7 @@ public class Display {
 
             g.setColor(new Color(Math.max(Math.min(triangle.color.getRed() - avg, 255), 0), Math.max(Math.min(triangle.color.getGreen() - avg, 255), 0), Math.max(Math.min(triangle.color.getBlue() - avg, 255), 0)));
 
-            if (Az3D > 100){
+            if (Az3D > 50){
                 fillTriangle(
                         (int) ((Ax3D / Az3D) * fov) + getFrameWidth() / 2,
                         (int) ((Ay3D / Az3D) * fov) + getFrameHeight() / 2,
