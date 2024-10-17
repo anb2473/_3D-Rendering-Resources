@@ -19,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 
 public class Display {
@@ -731,9 +732,21 @@ public class Display {
 
     public void changeCameraSpeed(int newSpeed){camera.speed = newSpeed;}
 
+    public void addMeshToRosterAndSort(Mesh3D mesh, String tag){
+        tags.put(tag, meshes.size());
+        meshes.add(mesh);
+        meshes = sortByMesh();
+    }
+
     public void addMeshToRoster(Mesh3D mesh, String tag){
         tags.put(tag, meshes.size());
         meshes.add(mesh);
+    }
+
+    public void replaceMeshAndSort(Mesh3D mesh, String tag){
+        int indx = tags.get(tag);
+        meshes.remove(indx);
+        meshes.add(indx, mesh);
         meshes = sortByMesh();
     }
 
@@ -741,7 +754,6 @@ public class Display {
         int indx = tags.get(tag);
         meshes.remove(indx);
         meshes.add(indx, mesh);
-        meshes = sortByMesh();
     }
 
     private @NotNull LinkedList<Mesh3D> sortByMesh(){
@@ -780,11 +792,22 @@ public class Display {
         return result;
     }
 
-    public void updateCamera(){
+    public void updateCameraByMesh(){
         camera.update(getKeys());
 
         for (Mesh3D mesh : meshes)
             drawMeshObject(mesh, fov, (int) camera.xAxis, (int) camera.yAxis, (int) camera.zAxis, (int) camera.x, (int) camera.y, (int) camera.z);
+    }
+
+    public void updateCamera(){
+        camera.update(getKeys());
+
+        LinkedList<Triangle> allTris = new LinkedList<>();
+        for (Mesh3D mesh : meshes)
+            allTris.addAll(List.of(mesh.tris));
+
+        Mesh3D finalMesh = new Mesh3D(allTris.toArray(new Triangle[]{}));
+        drawMeshObject(finalMesh, fov, (int) camera.xAxis, (int) camera.yAxis, (int) camera.zAxis, (int) camera.x, (int) camera.y, (int) camera.z);
     }
 
     public void clearRoster(){
