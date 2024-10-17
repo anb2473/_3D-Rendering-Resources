@@ -10,12 +10,12 @@ public class RectangleMesh {
     public RectangleMesh(int x, int y, int z, int width, int height, int depth, int res, Color color){
         LinkedList<Triangle> tris = new LinkedList<>();
 
-        int faceNorthWidth = width / res;
-        int faceNorthHeight = height / res;
-        int faceEastWidth = depth / res;
-        int faceEastHeight = height / res;
-        int faceTopWidth = width / res;
-        int faceTopHeight = depth / res;
+        int faceNorthWidth = (int) Math.ceil((double) width / res);
+        int faceNorthHeight = (int) Math.ceil((double) height / res);
+        int faceEastWidth = (int) Math.ceil((double) depth / res);
+        int faceEastHeight = (int) Math.ceil((double) height / res);
+        int faceTopWidth = (int) Math.ceil((double) width / res);
+        int faceTopHeight = (int) Math.ceil((double) depth / res);
         for (int face = 0; face < 6; face++)
             for (int faceX = 0; faceX < res; faceX++)
                 for (int faceY = 0; faceY < res; faceY++)
