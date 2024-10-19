@@ -38,6 +38,8 @@ public class Display {
 
     private String title = "";
 
+    Mesh3D combinedMesh;
+
     CameraBase camera;
     LinkedList<Mesh3D> meshes = new LinkedList<>();
     HashMap<String, Integer> tags = new HashMap<>();
@@ -631,7 +633,7 @@ public class Display {
     //</editor-fold>
 
     @Contract(pure = true)
-    private @NotNull LinkedList<Triangle> sortMeshByZ(Triangle @NotNull [] tris, double xRad, double yRad, double zRad, int offsetX, int offsetY, int offsetZ){
+    private @NotNull List<Triangle> sortMeshByZ(Triangle @NotNull [] tris, double xRad, double yRad, double zRad, int offsetX, int offsetY, int offsetZ){
         LinkedList<Triangle> result = new LinkedList<>();
 
         for (Triangle triangle : tris){
@@ -645,7 +647,7 @@ public class Display {
             int Bx3D = triangle.verticesB.getFirst() + offsetX;
             int Cx3D = triangle.verticesC.getFirst() + offsetX;
 
-            int avg = (((Math.abs(Az3D) + Math.abs(Bz3D) + Math.abs(Cz3D)) + ((Math.abs(Ay3D) + Math.abs(By3D) + Math.abs(Cy3D))) + ((Math.abs(Ax3D) + Math.abs(Bx3D) + Math.abs(Cx3D)))) / 200);
+            int avg = (((Math.abs(Az3D) + Math.abs(Bz3D) + Math.abs(Cz3D)) + ((Math.abs(Ay3D) + Math.abs(By3D) + Math.abs(Cy3D))) + ((Math.abs(Ax3D) + Math.abs(Bx3D) + Math.abs(Cx3D)))));
             int indx = 0;
             boolean successful = false;
             for (Triangle other : result) {
@@ -659,15 +661,8 @@ public class Display {
                 int otherBx3D = other.verticesB.getFirst() + offsetX;
                 int otherCx3D = other.verticesC.getFirst() + offsetX;
 
-                int otherAvg = (((Math.abs(otherAz3D) + Math.abs(otherBz3D) + Math.abs(otherCz3D)) + ((Math.abs(otherAy3D) + Math.abs(otherBy3D) + Math.abs(otherCy3D))) + ((Math.abs(otherAx3D) + Math.abs(otherBx3D) + Math.abs(otherCx3D)))) / 200);
-                if (Ax3D > getFrameWidth() / 2) {
-                    if (avg > otherAvg) {
-                        result.add(indx, triangle);
-                        successful = true;
-                        break;
-                    }
-                }
-                else if (avg > otherAvg) {
+                int otherAvg = (((Math.abs(otherAz3D) + Math.abs(otherBz3D) + Math.abs(otherCz3D)) + ((Math.abs(otherAy3D) + Math.abs(otherBy3D) + Math.abs(otherCy3D))) + ((Math.abs(otherAx3D) + Math.abs(otherBx3D) + Math.abs(otherCx3D)))));
+                if (avg > otherAvg) {
                     result.add(indx, triangle);
                     successful = true;
                     break;
@@ -680,7 +675,7 @@ public class Display {
                 result.add(triangle);
         }
 
-        return result;
+        return result.subList((int) (Math.ceil((double) result.size() / 4)), result.size());
     }
 
     public void drawMeshObject(@NotNull Mesh3D mesh, int fov, int xAxis, int yAxis, int zAxis, int offsetX, int offsetY, int offsetZ){
@@ -690,17 +685,17 @@ public class Display {
 
         double Ax3D, Ay3D, Az3D, Bx3D, By3D, Bz3D, Cx3D, Cy3D, Cz3D;
         for (Triangle triangle : sortMeshByZ(mesh.tris, xRad, yRad, zRad, offsetX, offsetY, offsetZ)){
-            Ax3D = Math.cos(yRad) * (triangle.verticesA.getFirst() + offsetX) + Math.sin(yRad) * (triangle.verticesA.get(2) + offsetZ);
+            Ax3D = Math.cos(yRad) * (triangle.verticesA.getFirst() + offsetX) + Math.sin(yRad) * (triangle.verticesA.getLast() + offsetZ);
             Ay3D = triangle.verticesA.get(1) + offsetY;
-            Az3D = Math.cos(yRad) * (triangle.verticesA.get(2) + offsetZ) - Math.sin(yRad) * (triangle.verticesA.getFirst() + offsetX);
+            Az3D = Math.cos(yRad) * (triangle.verticesA.getLast() + offsetZ) - Math.sin(yRad) * (triangle.verticesA.getFirst() + offsetX);
 
-            Bx3D = Math.cos(yRad) * (triangle.verticesB.getFirst() + offsetX) + Math.sin(yRad) * (triangle.verticesB.get(2) + offsetZ);
+            Bx3D = Math.cos(yRad) * (triangle.verticesB.getFirst() + offsetX) + Math.sin(yRad) * (triangle.verticesB.getLast() + offsetZ);
             By3D = triangle.verticesB.get(1) + offsetY;
-            Bz3D = Math.cos(yRad) * (triangle.verticesB.get(2) + offsetZ) - Math.sin(yRad) * (triangle.verticesB.getFirst() + offsetX);
+            Bz3D = Math.cos(yRad) * (triangle.verticesB.getLast() + offsetZ) - Math.sin(yRad) * (triangle.verticesB.getFirst() + offsetX);
 
-            Cx3D = Math.cos(yRad) * (triangle.verticesC.getFirst() + offsetX) + Math.sin(yRad) * (triangle.verticesC.get(2) + offsetZ);
+            Cx3D = Math.cos(yRad) * (triangle.verticesC.getFirst() + offsetX) + Math.sin(yRad) * (triangle.verticesC.getLast() + offsetZ);
             Cy3D = triangle.verticesC.get(1) + offsetY;
-            Cz3D = Math.cos(yRad) * (triangle.verticesC.get(2) + offsetZ) - Math.sin(yRad) * (triangle.verticesC.getFirst() + offsetX);
+            Cz3D = Math.cos(yRad) * (triangle.verticesC.getLast() + offsetZ) - Math.sin(yRad) * (triangle.verticesC.getFirst() + offsetX);
 
             int avg = (int) (((Math.abs(Az3D) + Math.abs(Bz3D) + Math.abs(Cz3D)) + ((Math.abs(Ay3D) + Math.abs(By3D) + Math.abs(Cy3D))) + ((Math.abs(Ax3D) + Math.abs(Bx3D) + Math.abs(Cx3D)))) / focus_range);
 
@@ -760,26 +755,25 @@ public class Display {
         LinkedList<Mesh3D> result = new LinkedList<>();
 
         for (Mesh3D mesh : meshes){
-            int avg = -Math.abs(mesh.tris[0].verticesA.getFirst()) + -Math.abs(mesh.tris[0].verticesA.get(1)) + mesh.tris[0].verticesA.get(2);
+            if (mesh.tris[0].verticesA.get(2) / (Math.abs(mesh.tris[0].verticesA.get(2))) == -1)
+                continue;
+
+            int avg = mesh.tris[0].verticesA.getFirst() + mesh.tris[0].verticesA.get(1) + mesh.tris[0].verticesA.get(2);
 
             int indx = 0;
             boolean successful = false;
             for (Mesh3D other : result) {
-                int otherAvg = -Math.abs(other.tris[0].verticesA.getFirst()) + -Math.abs(mesh.tris[0].verticesA.get(1)) + mesh.tris[0].verticesA.get(2);
+                int otherAvg = other.tris[0].verticesA.getFirst() + other.tris[0].verticesA.get(1) + other.tris[0].verticesA.get(2);
 
-                if (camera.x > other.tris[0].verticesA.getFirst() && camera.x > mesh.tris[0].verticesA.getFirst()) {
-                    if (avg < otherAvg) {
-                        result.add(indx, mesh);
-                        successful = true;
-                        break;
-                    }
+                if (camera.x > mesh.tris[0].verticesA.getFirst() && camera.x > other.tris[0].verticesA.getFirst()){
+                    avg = -avg;
+                    otherAvg = -otherAvg;
                 }
-                else {
-                    if (avg > otherAvg) {
-                        result.add(indx, mesh);
-                        successful = true;
-                        break;
-                    }
+
+                if (avg < otherAvg) {
+                    result.add(indx, mesh);
+                    successful = true;
+                    break;
                 }
 
                 indx++;
@@ -793,6 +787,8 @@ public class Display {
     }
 
     public void updateCameraByMesh(){
+        meshes = sortByMesh();
+
         camera.update(getKeys());
 
         for (Mesh3D mesh : meshes)
@@ -806,8 +802,9 @@ public class Display {
         for (Mesh3D mesh : meshes)
             allTris.addAll(List.of(mesh.tris));
 
-        Mesh3D finalMesh = new Mesh3D(allTris.toArray(new Triangle[]{}));
-        drawMeshObject(finalMesh, fov, (int) camera.xAxis, (int) camera.yAxis, (int) camera.zAxis, (int) camera.x, (int) camera.y, (int) camera.z);
+        combinedMesh = new Mesh3D(allTris.toArray(new Triangle[]{}));
+
+        drawMeshObject(combinedMesh, fov, (int) camera.xAxis, (int) camera.yAxis, (int) camera.zAxis, (int) camera.x, (int) camera.y, (int) camera.z);
     }
 
     public void clearRoster(){
