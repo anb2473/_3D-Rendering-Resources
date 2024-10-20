@@ -14,6 +14,9 @@ import org.jetbrains.annotations.NotNull;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -678,13 +681,36 @@ public class Display {
         return result.subList((int) (Math.ceil((double) result.size() / 4)), result.size());
     }
 
-    public void drawMeshObject(@NotNull Mesh3D mesh, int fov, int xAxis, int yAxis, int zAxis, int offsetX, int offsetY, int offsetZ){
+    private void drawTriangularImage(BufferedImage img, int x1, int y1, int x2, int y2, int x3, int y3) throws NoninvertibleTransformException {
+        AffineTransform at = new AffineTransform();
+        at.setTransform(x1, y1, x2, y2, x3, y3);
+
+        BufferedImage warpedImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
+
+        for (int x = 0; x < warpedImage.getWidth(); x++) {
+            for (int y = 0; y < warpedImage.getHeight(); y++) {
+                Point2D srcPoint = at.inverseTransform(new Point2D.Double(x, y), null);
+
+                if (srcPoint.getX() >= 0 && srcPoint.getX() < img.getWidth() &&
+                        srcPoint.getY() >= 0 && srcPoint.getY() < img.getHeight()) {
+
+                    int rgb = img.getRGB((int) srcPoint.getX(), (int) srcPoint.getY());
+                    warpedImage.setRGB(x, y, rgb);
+                }
+            }
+        }
+    }
+
+    public void drawMeshObject(@NotNull Mesh3D mesh, int fov, int xAxis, int yAxis, int zAxis, int offsetX, int offsetY, int offsetZ) throws NoninvertibleTransformException {
         double xRad = Math.toRadians(xAxis);
         double yRad = Math.toRadians(yAxis);
         double zRad = Math.toRadians(zAxis);
 
         double Ax3D, Ay3D, Az3D, Bx3D, By3D, Bz3D, Cx3D, Cy3D, Cz3D;
-        for (Triangle triangle : sortMeshByZ(mesh.tris, xRad, yRad, zRad, offsetX, offsetY, offsetZ)){
+
+        List<Triangle> sorted = sortMeshByZ(mesh.tris, xRad, yRad, zRad, offsetX, offsetY, offsetZ);
+
+        for (Triangle triangle : sorted){
             Ax3D = Math.cos(yRad) * (triangle.verticesA.getFirst() + offsetX) + Math.sin(yRad) * (triangle.verticesA.getLast() + offsetZ);
             Ay3D = triangle.verticesA.get(1) + offsetY;
             Az3D = Math.cos(yRad) * (triangle.verticesA.getLast() + offsetZ) - Math.sin(yRad) * (triangle.verticesA.getFirst() + offsetX);
@@ -755,19 +781,25 @@ public class Display {
         LinkedList<Mesh3D> result = new LinkedList<>();
 
         for (Mesh3D mesh : meshes){
-            if (mesh.tris[0].verticesA.get(2) / (Math.abs(mesh.tris[0].verticesA.get(2))) == -1)
+            int trisMid = (int) Math.ceil((double) mesh.tris.length / 2);
+            if (mesh.tris[trisMid].verticesA.get(2) / (Math.abs(mesh.tris[trisMid].verticesA.getLast())) == -1)
                 continue;
 
-            int avg = mesh.tris[0].verticesA.getFirst() + mesh.tris[0].verticesA.get(1) + mesh.tris[0].verticesA.get(2);
+            int avg = mesh.tris[trisMid].verticesA.getFirst() + mesh.tris[trisMid].verticesA.get(1) + mesh.tris[trisMid].verticesA.getLast();
 
             int indx = 0;
             boolean successful = false;
             for (Mesh3D other : result) {
-                int otherAvg = other.tris[0].verticesA.getFirst() + other.tris[0].verticesA.get(1) + other.tris[0].verticesA.get(2);
+                int otherMid = (int) Math.ceil((double) other.tris.length / 2);
+                int otherAvg = other.tris[otherMid].verticesA.getFirst() + other.tris[otherMid].verticesA.get(1) + other.tris[otherMid].verticesA.getLast();
 
-                if (camera.x > mesh.tris[0].verticesA.getFirst() && camera.x > other.tris[0].verticesA.getFirst()){
+                if (camera.x > mesh.tris[trisMid].verticesA.getFirst() || camera.x > other.tris[otherMid].verticesA.getFirst()){
                     avg = -avg;
                     otherAvg = -otherAvg;
+                }
+                else{
+                    System.out.println(mesh.tris[trisMid].verticesA.getFirst());
+                    System.out.println(other.tris[otherMid].verticesA.getFirst());
                 }
 
                 if (avg < otherAvg) {
@@ -786,7 +818,7 @@ public class Display {
         return result;
     }
 
-    public void updateCameraByMesh(){
+    public void updateCameraByMesh() throws NoninvertibleTransformException {
         meshes = sortByMesh();
 
         camera.update(getKeys());
@@ -795,7 +827,7 @@ public class Display {
             drawMeshObject(mesh, fov, (int) camera.xAxis, (int) camera.yAxis, (int) camera.zAxis, (int) camera.x, (int) camera.y, (int) camera.z);
     }
 
-    public void updateCamera(){
+    public void updateCamera() throws NoninvertibleTransformException {
         camera.update(getKeys());
 
         LinkedList<Triangle> allTris = new LinkedList<>();

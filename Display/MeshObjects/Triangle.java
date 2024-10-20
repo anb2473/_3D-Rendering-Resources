@@ -1,6 +1,7 @@
 package Display.MeshObjects;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.Vector;
 
 public class Triangle {
