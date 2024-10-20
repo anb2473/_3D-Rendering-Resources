@@ -20,10 +20,8 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
 
 public class Display {
     private JFrame frame;
@@ -46,12 +44,15 @@ public class Display {
     CameraBase camera;
     LinkedList<Mesh3D> meshes = new LinkedList<>();
     HashMap<String, Integer> tags = new HashMap<>();
+    HashMap<Mesh3D, String> tagQuerier = new HashMap<>();
 
     int fov = 300;
 
     public int focus_range = 18;
 
     BufferedImage background;
+
+    int sortTick = 0;
 
     //<editor-fold desc="Display initiation">
     public Display(String title, int width, int height, String iconImage, boolean resizable, boolean subWindow) throws Exception {
@@ -636,13 +637,15 @@ public class Display {
     //</editor-fold>
 
     @Contract(pure = true)
-    private @NotNull List<Triangle> sortMeshByZ(Triangle @NotNull [] tris, double xRad, double yRad, double zRad, int offsetX, int offsetY, int offsetZ){
+    private @NotNull List<Triangle> sortMeshByZ(Triangle @NotNull [] tris, double xRad, double yRad, double zRad, int offsetX, int offsetY, int offsetZ) {
         LinkedList<Triangle> result = new LinkedList<>();
 
-        for (Triangle triangle : tris){
-            int Az3D = triangle.verticesA.get(2) + offsetZ;
-            int Bz3D = triangle.verticesB.get(2) + offsetZ;
-            int Cz3D = triangle.verticesC.get(2) + offsetZ;
+        HashMap<Triangle, Integer> averages = new HashMap<>();
+
+        for (Triangle triangle : tris) {
+            int Az3D = triangle.verticesA.getLast() + offsetZ;
+            int Bz3D = triangle.verticesB.getLast() + offsetZ;
+            int Cz3D = triangle.verticesC.getLast() + offsetZ;
             int Ay3D = triangle.verticesA.get(1) + offsetY;
             int By3D = triangle.verticesB.get(1) + offsetY;
             int Cy3D = triangle.verticesC.get(1) + offsetY;
@@ -650,21 +653,14 @@ public class Display {
             int Bx3D = triangle.verticesB.getFirst() + offsetX;
             int Cx3D = triangle.verticesC.getFirst() + offsetX;
 
-            int avg = (((Math.abs(Az3D) + Math.abs(Bz3D) + Math.abs(Cz3D)) + ((Math.abs(Ay3D) + Math.abs(By3D) + Math.abs(Cy3D))) + ((Math.abs(Ax3D) + Math.abs(Bx3D) + Math.abs(Cx3D)))));
+            int avg = Math.abs(Az3D) + Math.abs(Bz3D) + Math.abs(Cz3D) + Math.abs(Ay3D) + Math.abs(By3D) + Math.abs(Cy3D) + Math.abs(Ax3D) + Math.abs(Bx3D) + Math.abs(Cx3D);
+
+            averages.put(triangle, avg);
+
             int indx = 0;
             boolean successful = false;
             for (Triangle other : result) {
-                int otherAz3D = other.verticesA.get(2) + offsetZ;
-                int otherBz3D = other.verticesB.get(2) + offsetZ;
-                int otherCz3D = other.verticesC.get(2) + offsetZ;
-                int otherAy3D = other.verticesA.get(1) + offsetY;
-                int otherBy3D = other.verticesB.get(1) + offsetY;
-                int otherCy3D = other.verticesC.get(1) + offsetY;
-                int otherAx3D = other.verticesA.getFirst() + offsetX;
-                int otherBx3D = other.verticesB.getFirst() + offsetX;
-                int otherCx3D = other.verticesC.getFirst() + offsetX;
-
-                int otherAvg = (((Math.abs(otherAz3D) + Math.abs(otherBz3D) + Math.abs(otherCz3D)) + ((Math.abs(otherAy3D) + Math.abs(otherBy3D) + Math.abs(otherCy3D))) + ((Math.abs(otherAx3D) + Math.abs(otherBx3D) + Math.abs(otherCx3D)))));
+                int otherAvg = averages.get(other);
                 if (avg > otherAvg) {
                     result.add(indx, triangle);
                     successful = true;
@@ -678,7 +674,7 @@ public class Display {
                 result.add(triangle);
         }
 
-        return result.subList((int) (Math.ceil((double) result.size() / 4)), result.size());
+        return result;
     }
 
     private void drawTriangularImage(BufferedImage img, int x1, int y1, int x2, int y2, int x3, int y3) throws NoninvertibleTransformException {
@@ -725,7 +721,7 @@ public class Display {
 
             int avg = (int) (((Math.abs(Az3D) + Math.abs(Bz3D) + Math.abs(Cz3D)) + ((Math.abs(Ay3D) + Math.abs(By3D) + Math.abs(Cy3D))) + ((Math.abs(Ax3D) + Math.abs(Bx3D) + Math.abs(Cx3D)))) / focus_range);
 
-            g.setColor(new Color(Math.max(Math.min(triangle.color.getRed() - avg, 255), 0), Math.max(Math.min(triangle.color.getGreen() - avg, 255), 0), Math.max(Math.min(triangle.color.getBlue() - avg, 255), 0)));
+            g.setColor(new Color(Math.max(Math.min(triangle.color.getRed() - avg, 255), 0), Math.max(Math.min(triangle.color.getGreen() - avg, 255), 0), Math.max(Math.min(triangle.color.getBlue() - avg, 255), 0), triangle.color.getAlpha()));
 
             if (Az3D > 50)
                 fillTriangle(
@@ -753,57 +749,51 @@ public class Display {
 
     public void changeCameraSpeed(int newSpeed){camera.speed = newSpeed;}
 
-    public void addMeshToRosterAndSort(Mesh3D mesh, String tag){
-        tags.put(tag, meshes.size());
-        meshes.add(mesh);
-        meshes = sortByMesh();
-    }
-
     public void addMeshToRoster(Mesh3D mesh, String tag){
         tags.put(tag, meshes.size());
         meshes.add(mesh);
-    }
-
-    public void replaceMeshAndSort(Mesh3D mesh, String tag){
-        int indx = tags.get(tag);
-        meshes.remove(indx);
-        meshes.add(indx, mesh);
-        meshes = sortByMesh();
+        tagQuerier.put(mesh, tag);
     }
 
     public void replaceMesh(Mesh3D mesh, String tag){
         int indx = tags.get(tag);
+        tagQuerier.remove(meshes.get(indx));
+        tagQuerier.put(mesh, tag);
         meshes.remove(indx);
         meshes.add(indx, mesh);
     }
 
     private @NotNull LinkedList<Mesh3D> sortByMesh(){
+        HashMap<Mesh3D, Integer> sorted = new LinkedHashMap<>(100, 85, true);
+        HashMap<Mesh3D, Integer> xMap = new LinkedHashMap<>(100, 85, true);
         LinkedList<Mesh3D> result = new LinkedList<>();
 
         for (Mesh3D mesh : meshes){
             int trisMid = (int) Math.ceil((double) mesh.tris.length / 2);
-            if (mesh.tris[trisMid].verticesA.get(2) / (Math.abs(mesh.tris[trisMid].verticesA.getLast())) == -1)
+
+            int meshX = mesh.tris[trisMid].verticesA.getFirst();
+            int meshY = mesh.tris[trisMid].verticesA.get(1);
+            int meshZ = mesh.tris[trisMid].verticesA.getLast();
+
+            if (meshY / (Math.abs(meshZ)) == -1)
                 continue;
 
-            int avg = mesh.tris[trisMid].verticesA.getFirst() + mesh.tris[trisMid].verticesA.get(1) + mesh.tris[trisMid].verticesA.getLast();
+            int avg = meshX + meshY + meshZ;
 
             int indx = 0;
             boolean successful = false;
             for (Mesh3D other : result) {
-                int otherMid = (int) Math.ceil((double) other.tris.length / 2);
-                int otherAvg = other.tris[otherMid].verticesA.getFirst() + other.tris[otherMid].verticesA.get(1) + other.tris[otherMid].verticesA.getLast();
+                int otherAvg = sorted.get(other);
 
-                if (camera.x > mesh.tris[trisMid].verticesA.getFirst() || camera.x > other.tris[otherMid].verticesA.getFirst()){
+                if (camera.x > meshX || camera.x > xMap.get(other)){
                     avg = -avg;
                     otherAvg = -otherAvg;
-                }
-                else{
-                    System.out.println(mesh.tris[trisMid].verticesA.getFirst());
-                    System.out.println(other.tris[otherMid].verticesA.getFirst());
                 }
 
                 if (avg < otherAvg) {
                     result.add(indx, mesh);
+                    sorted.put(mesh, avg);
+                    xMap.put(mesh, meshX);
                     successful = true;
                     break;
                 }
@@ -811,15 +801,30 @@ public class Display {
                 indx++;
             }
 
-            if (!successful)
+            if (!successful) {
                 result.add(mesh);
+                sorted.put(mesh, avg);
+                xMap.put(mesh, meshX);
+            }
+        }
+
+        tags.clear();
+
+        int indx = 0;
+        for (Mesh3D mesh : result) {
+            tags.put(tagQuerier.get(mesh), indx);
+            indx++;
         }
 
         return result;
     }
 
     public void updateCameraByMesh() throws NoninvertibleTransformException {
-        meshes = sortByMesh();
+        sortTick--;
+        if (sortTick <= 0) {
+            meshes = sortByMesh();
+            sortTick = 10;
+        }
 
         camera.update(getKeys());
 
@@ -827,19 +832,8 @@ public class Display {
             drawMeshObject(mesh, fov, (int) camera.xAxis, (int) camera.yAxis, (int) camera.zAxis, (int) camera.x, (int) camera.y, (int) camera.z);
     }
 
-    public void updateCamera() throws NoninvertibleTransformException {
-        camera.update(getKeys());
-
-        LinkedList<Triangle> allTris = new LinkedList<>();
-        for (Mesh3D mesh : meshes)
-            allTris.addAll(List.of(mesh.tris));
-
-        combinedMesh = new Mesh3D(allTris.toArray(new Triangle[]{}));
-
-        drawMeshObject(combinedMesh, fov, (int) camera.xAxis, (int) camera.yAxis, (int) camera.zAxis, (int) camera.x, (int) camera.y, (int) camera.z);
-    }
-
     public void clearRoster(){
         meshes.clear();
+        tags.clear();
     }
 }
