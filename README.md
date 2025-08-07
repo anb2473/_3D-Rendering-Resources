@@ -1,3 +1,5 @@
+This project is no longer being maintained.
+
 # 3D Rendering Engine for Java
 
 This project is a 3D rendering system for application in game creation.
